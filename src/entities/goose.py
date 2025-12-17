@@ -32,7 +32,7 @@ class HonkGoose(Goose):
         player.update_balance(effect_power)
 
         if unary_sign == '-':
-            return f"Игрок {player.name} слил {effect_power} валюты из-за орущего гуся {self.name}"
+            return f"Игрок {player.name} слил {abs(effect_power)} валюты из-за орущего гуся {self.name}"
         return f"Игрок {player.name} залутал {effect_power} валюты на баланс благодаря орущему гусю {self.name}"
 
     def __repr__(self):

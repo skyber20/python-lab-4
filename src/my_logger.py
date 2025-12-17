@@ -2,8 +2,6 @@ import logging
 import os
 import sys
 
-from src.constants import LOG_PATH
-
 
 def setup_logger():
     logger = logging.getLogger('casino_logger')
@@ -11,7 +9,7 @@ def setup_logger():
 
     logger.propagate = False
 
-    path_casino_log = os.path.abspath(os.path.join(os.path.dirname(__file__), LOG_PATH))
+    path_casino_log = os.path.abspath(os.path.join(os.path.dirname(__file__), 'casino.log'))
 
     file_handler = logging.FileHandler(path_casino_log, mode='a')
     file_handler.setLevel(logging.INFO)

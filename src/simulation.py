@@ -7,6 +7,7 @@ from src.entities.player import Player
 from src.entities.goose import Goose, HonkGoose, WarGoose
 from src.my_logger import logger
 from src.casik import Casino
+from src.exceptions import NegativeSteps
 
 
 def generate_name():
@@ -15,6 +16,8 @@ def generate_name():
 
 
 def run_simulation(steps: int = 20, seed: int | None = None) -> None:
+    if steps <= 0:
+        raise NegativeSteps()
     if seed is not None:
         random.seed(seed)
 
@@ -35,6 +38,3 @@ def run_simulation(steps: int = 20, seed: int | None = None) -> None:
         print()
         logger.info(f'Шаг: {step}')
         casino.run_event()
-
-run_simulation(20)
-

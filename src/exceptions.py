@@ -6,3 +6,18 @@ class PlayerNotFound(Exception):
 class GooseNotFound(Exception):
     def __init__(self, goose):
         super().__init__(f"Игрок {goose} не найден")
+
+
+class InvalidAmountArgs(Exception):
+    def __init__(self):
+        super().__init__('Указано неверное количество аргументов')
+
+
+class InvalidArgs(Exception):
+    def __init__(self):
+        super().__init__('Указаны некорректные аргументы')
+
+
+class NegativeSteps(Exception):
+    def __init__(self):
+        super().__init__('Количество шагов в симуляции должно быть > 0')
