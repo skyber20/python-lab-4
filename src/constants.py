@@ -1,0 +1,1 @@
+LOG_PATH = 'casino.log'

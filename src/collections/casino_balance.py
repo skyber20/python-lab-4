@@ -1,6 +1,7 @@
 from src.collections.player_collection import PlayerCollection
 from src.entities.player import Player
 from src.exceptions import PlayerNotFound
+from src.my_logger import logger
 
 
 class CasinoBalance:
@@ -10,6 +11,10 @@ class CasinoBalance:
     def __setitem__(self, player_name: str, balance: int):
         old_balance = self._balances.get(player_name, 'не было')
         self._balances[player_name] = balance
+        if old_balance == 'не было':
+            logger.info(f"У нас новый игрок - {player_name} с балансом {balance}")
+            return
+        logger.info(f"Баланс игрока {player_name} изменен: {old_balance} -> {balance}")
 
     def __delitem__(self, player_name: str):
         try:

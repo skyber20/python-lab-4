@@ -18,8 +18,8 @@ class Goose:
 class WarGoose(Goose):
     def attack(self, player: Player):
         damage = self.honk_volume * random.randint(1, 10)
-        player.update_balance(damage)
-        return f"{self.name} атаковал {player.name}! Потеряно {damage}. Баланс: {player.balance}"
+        player.update_balance(-damage)
+        return f"Гусь {self.name} атаковал игрока {player.name}! Потеряно {damage} валюты"
 
     def __repr__(self):
         return f"WarGoose(name='{self.name}', honk_volume={self.honk_volume})"
@@ -32,8 +32,8 @@ class HonkGoose(Goose):
         player.update_balance(effect_power)
 
         if unary_sign == '-':
-            return f"Игрок {player.name} слил {effect_power} из-за орущего гуся {self.name}"
-        return f"Игрок {player.name} получил {effect_power} на баланс благодаря орущему гусю {self.name}"
+            return f"Игрок {player.name} слил {effect_power} валюты из-за орущего гуся {self.name}"
+        return f"Игрок {player.name} залутал {effect_power} валюты на баланс благодаря орущему гусю {self.name}"
 
     def __repr__(self):
         return f"HonkGoose(name='{self.name}', honk_volume={self.honk_volume})"
