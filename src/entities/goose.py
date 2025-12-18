@@ -8,27 +8,27 @@ class Goose:
         self.name = name
         self.honk_volume = max(1, min(honk_volume, 10))
 
-    def honk(self):
-        return f"Гусь {self.name} кричит с громкостью {self.honk_volume}"
-
     def __repr__(self):
         return f"Goose(name='{self.name}', honk_volume={self.honk_volume})"
 
     def __str__(self):
         return f'Дэфолтный гусь {self.name} со своим ГА-ГА-ГА в {self.honk_volume} МдБ'
 
+    def honk(self):
+        return f"Гусь {self.name} кричит с громкостью {self.honk_volume}"
+
 
 class WarGoose(Goose):
-    def attack(self, player: Player):
-        damage = self.honk_volume * (random.randint(1, 25))
-        player.update_balance(-damage)
-        return f"Гусь {self.name} атаковал игрока {player.name}! Потеряно {damage} валюты"
-
     def __repr__(self):
         return f"WarGoose(name='{self.name}', honk_volume={self.honk_volume})"
 
     def __str__(self):
         return f'Боевой гусь {self.name} со своим ГА-ГА-ГА в {self.honk_volume} МдБ'
+
+    def attack(self, player: Player):
+        damage = self.honk_volume * (random.randint(1, 25))
+        player.update_balance(-damage)
+        return f"Гусь {self.name} атаковал игрока {player.name}! Потеряно {damage} валюты"
 
 
 class HonkGoose(Goose):

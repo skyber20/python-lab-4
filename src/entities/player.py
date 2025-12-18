@@ -8,6 +8,17 @@ class Player:
         self.balance = balance
         self.amount_chips = amount_chips
 
+    def __eq__(self, other):
+        if not isinstance(other, Player):
+            raise TypeError('Можно сравнивать Player с Player')
+        return self.name == other.name and self.balance == other.balance
+
+    def __repr__(self):
+        return f"Player(name='{self.name}', balance={self.balance}), amount_chips={self.amount_chips.amount}"
+
+    def __str__(self):
+        return f"Игрок {self.name} с балансом {self.balance} и {self.amount_chips.amount} фишками"
+
     @property
     def is_bankrupt(self):
         return self.amount_chips == 0 and self.balance <= 0
@@ -28,14 +39,3 @@ class Player:
             raise NotEnoughChips(amount, self.amount_chips.amount)
         self.amount_chips = self.amount_chips - Chip(amount)
         self.balance += amount
-
-    def __eq__(self, other):
-        if not isinstance(other, Player):
-            raise TypeError('Можно сравнивать Player с Player')
-        return self.name == other.name and self.balance == other.balance
-
-    def __repr__(self):
-        return f"Player(name='{self.name}', balance={self.balance}), amount_chips={self.amount_chips.amount}"
-
-    def __str__(self):
-        return f"Игрок {self.name} с балансом {self.balance} и {self.amount_chips.amount} фишками"
