@@ -5,6 +5,7 @@ from src.collections.goose_collection import GooseCollection
 from src.collections.player_collection import PlayerCollection
 from src.entities.goose import Goose, WarGoose, HonkGoose
 from src.entities.player import Player
+from src.entities.chip import Chip
 from src.my_logger import logger
 
 
@@ -20,17 +21,22 @@ class Casino:
                 self.register_player(player)
 
         if geese is not None:
+            logger.info(f'А это наши гуси')
             for goose in geese:
                 self.register_goose(goose)
 
         logger.info(f"Казино '{self.name}' открылось. В нем {len(self.players)} игроков и {len(self.geese)} гусей")
 
     def register_player(self, player: Player):
+        if player.is_bankrupt:
+            logger.warning('Этого не впускаем. Он банкрот')
         self.players.add(player)
         self.balances[player.name] = player.balance
+        logger.info(str(player))
 
     def register_goose(self, goose: Goose):
         self.geese.add(goose)
+        logger.info(str(goose))
 
     def random_player(self):
         if not self.players:
@@ -40,7 +46,7 @@ class Casino:
 
     def random_goose(self, goose_type=None):
         if goose_type is None:
-            type_geese = self.geese.filter_by_type(Goose)
+            type_geese = self.geese
         else:
             type_geese = self.geese.filter_by_type(goose_type)
 
@@ -48,6 +54,26 @@ class Casino:
             logger.warning('От вас даже гуси ушли')
             return None
         return random.choice(type_geese)
+
+    def player_defeated(self, player: Player):
+        self.players.remove_player(player)
+        del self.balances[player.name]
+
+    def plus_money(self, player: Player, need):
+        logger.info(f'Игроку {player.name} следует пополнить баланс (на {need})')
+        if player.amount_chips >= need:
+            logger.info(
+                f'Игрок пополнил баланс. Количество фишек {player.amount_chips.amount} -> {player.amount_chips.amount - need}')
+            player.sell_chips(need)
+            self.balances[player.name] = player.balance
+        elif player.amount_chips > 0:
+            logger.info(
+                f'Игрок не может пополнить баланс, так как ему не хватает {need - player.amount_chips.amount} фишек, но пока они есть, оставим его в живых')
+        else:
+            logger.warning('Пу-пу-пу')
+            self.player_defeated(player)
+            return False
+        return True
 
     def perform_attack(self):
         logger.info("Ивент 'ГУСЬ АТАКУЕТ'")
@@ -59,11 +85,22 @@ class Casino:
             return
 
         logger.info(f'Итак, главные герои этого события')
-        logger.info(f'Игрок {player.name} с балансом {player.balance}')
-        logger.info(f'Гусь {war_goose.name} со своим ГА-ГА-ГА в {war_goose.honk_volume} МдБ')
+        logger.info(str(player))
+        logger.info(str(war_goose))
+
+        if player.is_bankrupt:
+            logger.warning('Пу-пу-пу')
+            self.player_defeated(player)
+            return
 
         action = war_goose.attack(player)
         logger.info(action)
+
+        if player.balance < 0:
+            alive = self.plus_money(player, -player.balance)
+            if not alive:
+                return
+
         self.balances[player.name] = player.balance
 
     def perform_honk(self):
@@ -76,11 +113,22 @@ class Casino:
             return
 
         logger.info(f'Итак, главные герои этого события')
-        logger.info(f'Игрок {player.name} с балансом {player.balance}')
-        logger.info(f'Гусь {honk_goose.name} со своим ГА-ГА-ГА в {honk_goose.honk_volume} МдБ')
+        logger.info(str(player))
+        logger.info(str(honk_goose))
+
+        if player.is_bankrupt:
+            logger.warning('Пу-пу-пу')
+            self.player_defeated(player)
+            return
 
         action = honk_goose(player)
         logger.info(action)
+
+        if player.balance < 0:
+            alive = self.plus_money(player, -player.balance)
+            if not alive:
+                return
+
         self.balances[player.name] = player.balance
 
     def perform_bet(self):
@@ -92,13 +140,22 @@ class Casino:
             return
 
         logger.info(f'Итак, главный герой этого события')
-        logger.info(f'Игрок {player.name} с балансом {player.balance}')
+        logger.info(str(player))
 
-        if player.balance <= 0:
-            logger.info(f'У игрока {player.name} баланс стремится к {player.balance}. Ивент закончился')
+        if player.is_bankrupt:
+            logger.warning('Пу-пу-пу')
+            self.player_defeated(player)
             return
 
-        bet_amount = random.randint(1, min(100, player.balance))
+        if player.balance <= 0:
+            logger.info(f'У игрока {player.name} недостаточно средств. Если ему хватит фишек, то он сможет поучаствовать')
+            if -player.balance + 1 <= player.amount_chips:
+                self.plus_money(player, random.randint(-player.balance + 1, player.amount_chips.amount))
+            else:
+                logger.info(f'Увы, игроку не хватило {-player.balance + 1 - player.amount_chips.amount} фишек')
+                return
+
+        bet_amount = random.randint(1, player.balance)
         logger.info(f'Ставка: {bet_amount}. Игрок крутит рулетку...иииии....')
 
         if random.choice([True, False]):
@@ -107,33 +164,69 @@ class Casino:
         else:
             logger.info(f'Игроку {player.name} не фортануло:(')
             player.balance -= bet_amount
+
+            if player.balance < 0:
+                alive = self.plus_money(player, -player.balance)
+                if not alive:
+                    return
+
         self.balances[player.name] = player.balance
 
     def perform_steal(self):
-        logger.info("Ивент 'Гусь-воришка'")
-        player = self.random_player()
+        logger.info("Ивент 'Робин Гусь'")
+        poor_player, rich_player = self.players.poor_player(), self.players.rich_player()
         goose = self.random_goose(Goose)
 
-        if player is None or goose is None:
+        if poor_player is None or goose is None:
             logger.warning('Так как никого не было, ивент В С Ё')
             return
 
-        logger.info(f'Итак, главные герои этого события')
-        logger.info(f'Игрок {player.name} с балансом {player.balance}')
-        logger.info(f'Гусь {goose.name} со своим ГА-ГА-ГА в {goose.honk_volume} МдБ')
-
-        if player.balance <= 0:
-            logger.info(f"У игрока {player.name} баланс {player.balance}, ему нечего было терять. Ивент закончился")
+        if poor_player == rich_player:
+            logger.warning('Для этого ивента нужно 2 разных игрока')
             return
 
-        stolen_amount = random.randint(1, player.balance // 2)
+        logger.info(f'Итак, главные герои этого события')
+        logger.info(f'Богатый игрок {rich_player.name} с балансом {rich_player.balance} и {rich_player.amount_chips.amount} фишками')
+        logger.info(f'Бедный игрок {poor_player.name} с балансом {poor_player.balance} и {poor_player.amount_chips.amount} фишками')
+        logger.info(f'Робин Гусь {goose.name} со своим ГА-ГА-ГА в {goose.honk_volume} МдБ')
 
-        logger.info(f"Гусь {goose.name} украл у игрока {player.name} {stolen_amount} валюты")
-        player.balance -= stolen_amount
-        self.balances[player.name] = player.balance
+        if poor_player.is_bankrupt:
+            logger.warning('Пу-пу-пу')
+            self.player_defeated(poor_player)
+            if rich_player.is_bankrupt:
+                logger.warning('Пу-пу-пу')
+                self.player_defeated(rich_player)
+            return
+
+        if rich_player.balance > 0:
+            logger.info(f'Количество фишек богатого игрока {rich_player.amount_chips.amount} -> {rich_player.amount_chips.amount + rich_player.balance}')
+            rich_player.amount_chips = rich_player.amount_chips + Chip(rich_player.balance)
+            rich_player.balance = 0
+            self.balances[rich_player.name] = 0
+
+        if poor_player.balance > 0:
+            logger.info(f'Количество фишек бедного игрока {poor_player.amount_chips.amount} -> {poor_player.amount_chips.amount + poor_player.balance}')
+            poor_player.amount_chips = poor_player.amount_chips + Chip(poor_player.balance)
+            poor_player.balance = 0
+            self.balances[poor_player.name] = 0
+
+        logger.info('Робин гусь перевел деньги наших подопытных в фишки для удобства')
+
+        stolen_amount = random.randint(1, rich_player.amount_chips.amount)
+        logger.info(f"Робин Гусь украл у богатого игрока {rich_player.name} {stolen_amount} фишек")
+        logger.info(f"Количество фишек богатого игрока (уже не очень): {rich_player.amount_chips.amount} -> {rich_player.amount_chips.amount - stolen_amount}")
+        rich_player.amount_chips = rich_player.amount_chips - Chip(stolen_amount)
+
+        logger.info(f"Робин гусь отдал эти фишки бедному игроку {poor_player.name}")
+        logger.info(f"Количество фишек бедного игрока (уже чуть богаче): {poor_player.amount_chips.amount} -> {poor_player.amount_chips.amount + stolen_amount}")
+        poor_player.amount_chips = poor_player.amount_chips - Chip(stolen_amount)
+
+        if rich_player.is_bankrupt:
+            logger.info(f'"богатый" игрок {rich_player.name} всё потерял')
+            self.player_defeated(rich_player)
 
     def perform_panic(self):
-        logger.info("Ивент 'ПАНИКА'")
+        logger.info("Ивент 'НЕ НАДО ПАНИКИ'")
         goose = self.random_goose(Goose)
         player = self.random_player()
 
@@ -142,19 +235,57 @@ class Casino:
             return
 
         logger.info(f'Итак, главные герои этого события')
-        logger.info(f'Игрок {player.name} с балансом {player.balance}')
-        logger.info(f'Гусь {goose.name} со своим ГА-ГА-ГА в {goose.honk_volume} МдБ')
+        logger.info(str(player))
+        logger.info(str(goose))
 
-        if player.balance <= 0:
-            logger.info(f'Игроку {player.name} и так не было чего терять')
+        if player.is_bankrupt:
+            logger.warning(f'Пу-пу-пу')
+            self.player_defeated(player)
             return
 
-        logger.info(f'От паники игрок {player.name} выкинул все деньги в окно')
-        player.balance = 0
-        self.balances[player.name] = 0
+        if player.balance > 0:
+            logger.info(f'От паники игрок {player.name} выкинул все деньги в окно')
+            player.balance = 0
+            self.balances[player.name] = 0
+        else:
+            logger.info(f'От паники игрок {player.name} упал со стула')
+
+    def perform_spin(self):
+        logger.info("Ивент 'Удвой или обанкроться")
+        player = self.random_player()
+
+        if player is None:
+            logger.warning('Так как никого не было, ивент В С Ё')
+            return
+
+        logger.info(f'Итак, главный герой этого события')
+        logger.info(str(player))
+
+        if player.is_bankrupt:
+            logger.warning(f'Пу-пу-пу')
+            self.player_defeated(player)
+            return
+
+        n = random.randint(1, 6)
+        if n % 2 == 0:
+            logger.info(f'ИГРОК {player.name} УДВАИВАЕТ СВОЙ БЮДЖЕТ')
+
+            if player.balance > 0:
+                logger.info(f'По деньгам: {player.balance} -> {player.balance * 2}')
+                player.balance *= 2
+                self.balances[player.name] = player.balance
+
+            logger.info(f'По фишкам: {player.amount_chips.amount} -> {player.amount_chips.amount * 2}')
+            player.amount_chips = player.amount_chips + player.amount_chips
+        else:
+            logger.info(f'ИГРОК {player.name} ОБАНКРОТИЛСЯ')
+            player.balance = 0
+            player.amount_chips = Chip(0)
+            logger.warning('Пу-пу-пу')
+            self.player_defeated(player)
 
     def run_event(self):
-        events = [self.perform_attack, self.perform_honk, self.perform_bet, self.perform_steal, self.perform_panic]
+        events = [self.perform_attack, self.perform_honk, self.perform_bet, self.perform_steal, self.perform_panic, self.perform_spin]
         event = random.choice(events)
         event()
 

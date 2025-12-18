@@ -5,6 +5,7 @@ from src.collections.goose_collection import GooseCollection
 from src.collections.player_collection import PlayerCollection
 from src.entities.player import Player
 from src.entities.goose import Goose, HonkGoose, WarGoose
+from src.entities.chip import Chip
 from src.my_logger import logger
 from src.casik import Casino
 from src.exceptions import NegativeSteps
@@ -26,7 +27,7 @@ def run_simulation(steps: int = 20, seed: int | None = None) -> None:
     geese = GooseCollection()
 
     for _ in range(cnt):
-        player = Player('P_' + generate_name(), random.randint(0, 500))
+        player = Player('P_' + generate_name(), random.randint(0, 500), Chip(random.randint(0, 500)))
         goose = random.choice([Goose, HonkGoose, WarGoose])('G_' + generate_name(), random.randint(1, 10))
 
         players.add(player)

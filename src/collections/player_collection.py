@@ -75,3 +75,21 @@ class PlayerCollection:
             if player.name == player_name:
                 return player
         return None
+
+    def rich_player(self):
+        mx = -10000000
+        p = None
+        for player in self._players:
+            if player.amount_chips.amount + player.balance > mx:
+                mx = player.amount_chips.amount + player.balance
+                p = player
+        return p
+
+    def poor_player(self):
+        mn = 1000000000000
+        p = None
+        for player in self._players:
+            if player.amount_chips.amount + player.balance < mn:
+                mn = player.amount_chips.amount + player.balance
+                p = player
+        return p
