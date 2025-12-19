@@ -5,6 +5,11 @@ from src.entities.player import Player
 
 class Goose:
     def __init__(self, name: str, honk_volume: int = 1):
+        """
+        Класс Гусь
+        :param name: имя
+        :param honk_volume: громкость крика
+        """
         self.name = name
         self.honk_volume = max(1, min(honk_volume, 10))
 
@@ -15,6 +20,7 @@ class Goose:
         return f'Дэфолтный гусь {self.name} со своим ГА-ГА-ГА в {self.honk_volume} МдБ'
 
     def honk(self):
+        """ГА-ГА-ГА"""
         return f"Гусь {self.name} кричит с громкостью {self.honk_volume}"
 
 
@@ -26,6 +32,11 @@ class WarGoose(Goose):
         return f'Боевой гусь {self.name} со своим ГА-ГА-ГА в {self.honk_volume} МдБ'
 
     def attack(self, player: Player):
+        """
+        Атакует игрока, отбирая у него деньги
+        :param player: игрок
+        :return: сообщение о проделанном действии
+        """
         damage = self.honk_volume * (random.randint(1, 25))
         player.update_balance(-damage)
         return f"Гусь {self.name} атаковал игрока {player.name}! Потеряно {damage} валюты"

@@ -1,8 +1,8 @@
 import random
 
-from src.collections.casino_balance import CasinoBalance
-from src.collections.goose_collection import GooseCollection
-from src.collections.player_collection import PlayerCollection
+from src._collections.casino_balance import CasinoBalance
+from src._collections.goose_collection import GooseCollection
+from src._collections.player_collection import PlayerCollection
 from src.entities.goose import Goose, WarGoose, HonkGoose
 from src.entities.player import Player
 from src.entities.chip import Chip
@@ -11,6 +11,12 @@ from src.my_logger import logger
 
 class Casino:
     def __init__(self, players: PlayerCollection = None, geese: GooseCollection = None, name: str = 'Гусиный казик'):
+        """
+        Класс Казино
+        :param players: игроки
+        :param geese: гуси
+        :param name: наименование подпольного гусиного логова
+        """
         self.name = name
         self.players = PlayerCollection()
         self.geese = GooseCollection()
@@ -27,24 +33,40 @@ class Casino:
 
         logger.info(f"Казино '{self.name}' открылось. В нем {len(self.players)} игроков и {len(self.geese)} гусей")
 
-    def register_player(self, player: Player):
+    def __repr__(self):
+        return f"Casino(name={self.name}, players={self.players}, geese={self.geese})"
+
+    def register_player(self, player: Player) -> None:
+        """
+        Зарегистрировать игрока, добавив его баланс в коллекцию балансов
+        :param player: игрок
+        :return:
+        """
         if player.is_bankrupt:
             logger.warning('Этого не впускаем. Он банкрот')
+            return
         self.players.add(player)
         self.balances[player.name] = player.balance
         logger.info(str(player))
 
-    def register_goose(self, goose: Goose):
+    def register_goose(self, goose: Goose) -> None:
+        """
+        Регистрация гуся
+        :param goose: гусь
+        :return:
+        """
         self.geese.add(goose)
         logger.info(str(goose))
 
-    def random_player(self):
+    def random_player(self) -> Player | None:
+        """Рандомный игрок из коллекции игроков"""
         if not self.players:
             logger.warning('Игроков нема')
             return None
         return random.choice(self.players)
 
-    def random_goose(self, goose_type=None):
+    def random_goose(self, goose_type=None) -> Goose | None:
+        """Рандомный гусь из коллекции гусей"""
         if goose_type is None:
             type_geese = self.geese
         else:
@@ -55,11 +77,22 @@ class Casino:
             return None
         return random.choice(type_geese)
 
-    def player_defeated(self, player: Player):
+    def player_defeated(self, player: Player) -> None:
+        """
+        Игрок - банкрот -> выгоняем и стираем баланс
+        :param player: игрок
+        :return:
+        """
         self.players.remove_player(player)
         del self.balances[player.name]
 
-    def plus_money(self, player: Player, need):
+    def plus_money(self, player: Player, need) -> bool:
+        """
+        Если денег не хватает, то происходит обмен фишек на деньги
+        :param player: игрок
+        :param need: сколько требуется
+        :return: True - игрок остается в игре, False - банкрот и нужно выгнать из игры
+        """
         logger.info(f'Игроку {player.name} следует пополнить баланс (на {need})')
         if player.amount_chips >= need:
             logger.info(
@@ -75,7 +108,8 @@ class Casino:
             return False
         return True
 
-    def perform_attack(self):
+    def perform_attack(self) -> None:
+        """Атака гуся WarGoose. Отбирает у жертвы сколько то денег на балансе"""
         logger.info("Ивент 'ГУСЬ АТАКУЕТ'")
         war_goose = self.random_goose(WarGoose)
         player = self.random_player()
@@ -96,14 +130,13 @@ class Casino:
         action = war_goose.attack(player)
         logger.info(action)
 
-        if player.balance < 0:
-            alive = self.plus_money(player, -player.balance)
-            if not alive:
-                return
-
         self.balances[player.name] = player.balance
+        if player.balance < 0:
+            self.plus_money(player, -player.balance)
 
-    def perform_honk(self):
+
+    def perform_honk(self) -> None:
+        """Орущий гусь. Может как помочь своим криком (пололнить баланс), так и ухудшить ситуацию игроку (отобрать деньги)"""
         logger.info("Ивент 'ОРУЩИЙ КУСЬ'")
         honk_goose = self.random_goose(HonkGoose)
         player = self.random_player()
@@ -124,14 +157,12 @@ class Casino:
         action = honk_goose(player)
         logger.info(action)
 
-        if player.balance < 0:
-            alive = self.plus_money(player, -player.balance)
-            if not alive:
-                return
-
         self.balances[player.name] = player.balance
+        if player.balance < 0:
+            self.plus_money(player, -player.balance)
 
-    def perform_bet(self):
+    def perform_bet(self) -> None:
+        """Делаем ставочки. Игрок делает ставку и если она зашла, получает эти деньги, если не зашла - отдает из своего кармана"""
         logger.info("Ивент 'Ну эта ставка точно зайдет'")
         player = self.random_player()
 
@@ -161,18 +192,17 @@ class Casino:
         if random.choice([True, False]):
             logger.info(f'Игроку {player.name} крупно повезло!')
             player.balance += bet_amount
+            self.balances[player.name] = player.balance
         else:
             logger.info(f'Игроку {player.name} не фортануло:(')
             player.balance -= bet_amount
 
+            self.balances[player.name] = player.balance
             if player.balance < 0:
-                alive = self.plus_money(player, -player.balance)
-                if not alive:
-                    return
+                self.plus_money(player, -player.balance)
 
-        self.balances[player.name] = player.balance
-
-    def perform_steal(self):
+    def perform_steal(self) -> None:
+        """Робин Гусь. Гусь будет отбирать фишки у богатых игроков и отдавать их бедным"""
         logger.info("Ивент 'Робин Гусь'")
         poor_player, rich_player = self.players.poor_player(), self.players.rich_player()
         goose = self.random_goose(Goose)
@@ -219,13 +249,14 @@ class Casino:
 
         logger.info(f"Робин гусь отдал эти фишки бедному игроку {poor_player.name}")
         logger.info(f"Количество фишек бедного игрока (уже чуть богаче): {poor_player.amount_chips.amount} -> {poor_player.amount_chips.amount + stolen_amount}")
-        poor_player.amount_chips = poor_player.amount_chips - Chip(stolen_amount)
+        poor_player.amount_chips = poor_player.amount_chips + Chip(stolen_amount)
 
         if rich_player.is_bankrupt:
             logger.info(f'"богатый" игрок {rich_player.name} всё потерял')
             self.player_defeated(rich_player)
 
-    def perform_panic(self):
+    def perform_panic(self) -> None:
+        """Словил паничку. У игрока обнуляется весь баланс или он падает со стула, если баланс был <= 0"""
         logger.info("Ивент 'НЕ НАДО ПАНИКИ'")
         goose = self.random_goose(Goose)
         player = self.random_player()
@@ -247,10 +278,16 @@ class Casino:
             logger.info(f'От паники игрок {player.name} выкинул все деньги в окно')
             player.balance = 0
             self.balances[player.name] = 0
+
+            if player.amount_chips == 0:
+                logger.warning(f'Пу-пу-пу')
+                self.player_defeated(player)
+                return
         else:
             logger.info(f'От паники игрок {player.name} упал со стула')
 
-    def perform_spin(self):
+    def perform_spin(self) -> None:
+        """Рулетка. Если выпадает 2, 4, 6 - то у игрока в два раза увеличивается количество фишек и баланс. Если 1, 3, 5 - он банкрот и его выгоняют из игры"""
         logger.info("Ивент 'Удвой или обанкроться")
         player = self.random_player()
 
@@ -284,12 +321,14 @@ class Casino:
             logger.warning('Пу-пу-пу')
             self.player_defeated(player)
 
-    def run_event(self):
+    def run_event(self) -> None:
+        """Запускается случайное событие"""
         events = [self.perform_attack, self.perform_honk, self.perform_bet, self.perform_steal, self.perform_panic, self.perform_spin]
         event = random.choice(events)
         event()
 
-    def stats(self):
+    def stats(self) -> dict:
+        """Небольшая статистика"""
         logger.info('Чекаем текущую стату')
         total_balance = sum(p.balance for p in self.players)
 
@@ -302,13 +341,12 @@ class Casino:
             'total_balance': total_balance,
         }
 
-    def get_players(self):
+    def get_players(self) -> None:
+        """Текущие игроки с их балансом"""
         for player in self.players:
             print(f"{player.name}: {player.balance}")
 
-    def get_geese(self):
+    def get_geese(self) -> None:
+        """Имена гусей в казино"""
         for goose in self.geese:
             print(f"{goose.name}: {goose.honk_volume}")
-
-    def __repr__(self):
-        return f"Casino(name={self.name}, players={self.players}, geese={self.geese})"

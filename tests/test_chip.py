@@ -23,6 +23,9 @@ def test_chip_addition():
     with pytest.raises(TypeError):
         assert chip1 + 2
 
+    with pytest.raises(ValueError):
+        chip2 -= chip1
+
 
 def test_chip_subtraction():
     """Тест вычитания фишек"""

@@ -1,9 +1,11 @@
+from typing import Any
 from src.entities.player import Player
 from src.exceptions import PlayerNotFound
 
 
 class PlayerCollection:
     def __init__(self):
+        """Коллеция игроков"""
         self._players = []
 
     def __add__(self, other):
@@ -37,13 +39,18 @@ class PlayerCollection:
         except IndexError:
             raise IndexError("Индекс вышел за границы коллекции игроков")
 
-    def __contains__(self, player: Player):
+    def __contains__(self, player):
         return player in self._players
 
     def __repr__(self):
         return f"PlayerCollection(players={self._players})"
 
-    def add(self, other):
+    def add(self, other: Any) -> None:
+        """
+        Добавить нового игрока или коллекцию игроков
+        :param other: Игрок или Коллеция игроков
+        :return: ничего
+        """
         if isinstance(other, Player):
             self._players.append(other)
         elif isinstance(other, PlayerCollection):
@@ -52,31 +59,49 @@ class PlayerCollection:
             raise TypeError(f"Нельзя добавить {type(other)} к PlayerCollection")
 
 
-    def remove_player(self, player: Player):
+    def remove_player(self, player: Player) -> None:
+        """
+        Удаляет игрока из коллекции
+        :param player: игрок
+        :return: ничего
+        """
         if player not in self._players:
             raise PlayerNotFound(player)
         self._players.remove(player)
 
-    def remove_player_by_name(self, player_name: str):
+    def remove_player_by_name(self, player_name: str) -> None:
+        """
+        Удаляет игрока по имени
+        :param player_name: имя игрока
+        :return:
+        """
         for player in self._players:
             if player.name == player_name:
                 self._players.remove(player)
                 return
         raise PlayerNotFound(player_name)
 
-    def clear_players(self):
+    def clear_players(self) -> None:
+        """Очистить всю коллекцию игроков"""
         self._players.clear()
 
-    def get_names(self):
+    def get_names(self) -> list[str]:
+        """Все имена игроков в коллекции"""
         return [p.name for p in self._players]
 
-    def find_by_name(self, player_name: str):
+    def find_by_name(self, player_name: str) -> Player | None:
+        """
+        Найти игрока по имени
+        :param player_name: имя игрока
+        :return: игрок
+        """
         for player in self._players:
             if player.name == player_name:
                 return player
         return None
 
-    def rich_player(self):
+    def rich_player(self) -> Player | None:
+        """Найти богатого игрока (количество фишек + баланс)"""
         mx = -10000000
         p = None
         for player in self._players:
@@ -85,7 +110,8 @@ class PlayerCollection:
                 p = player
         return p
 
-    def poor_player(self):
+    def poor_player(self) -> Player | None:
+        """Найти бедного игрока (количество фишек + баланс)"""
         mn = 1000000000000
         p = None
         for player in self._players:

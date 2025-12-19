@@ -1,8 +1,8 @@
 import random
 import string
 
-from src.collections.goose_collection import GooseCollection
-from src.collections.player_collection import PlayerCollection
+from src._collections.goose_collection import GooseCollection
+from src._collections.player_collection import PlayerCollection
 from src.entities.player import Player
 from src.entities.goose import Goose, HonkGoose, WarGoose
 from src.entities.chip import Chip
@@ -11,12 +11,19 @@ from src.casik import Casino
 from src.exceptions import NegativeSteps
 
 
-def generate_name():
+def generate_name() -> str:
+    """Генерация имени для игрока или гуся"""
     alphabet = string.ascii_letters + string.digits
     return ''.join(random.choice(alphabet) for _ in range(8))
 
 
 def run_simulation(steps: int = 20, seed: int | None = None) -> None:
+    """
+    Запуск симуляции
+    :param steps: количество шагов
+    :param seed: сид для псевдослучайности
+    :return:
+    """
     if steps <= 0:
         raise NegativeSteps()
     if seed is not None:

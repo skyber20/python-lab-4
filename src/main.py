@@ -1,7 +1,7 @@
 import sys
 
 from src.simulation import run_simulation
-from src.exceptions import InvalidArgs, InvalidAmountArgs, NegativeSteps
+from src.exceptions import InvalidArgs, InvalidAmountArgs, NegativeSteps, PlayerNotFound, GooseNotFound, NotEnoughChips, NotEnoughMoney
 
 
 def main():
@@ -28,7 +28,11 @@ def main():
 
             try:
                 steps = int(user_inp[1])
-                seed = int(user_inp[2])
+                seed = user_inp[2]
+                if seed == 'None' or seed == 'none':
+                    seed = None
+                else:
+                    seed = int(seed)
             except ValueError:
                 raise InvalidArgs()
 
@@ -36,6 +40,8 @@ def main():
             run_simulation(steps, seed)
             print('\nСИМУЛЯЦИЯ КАЗИКА ЗАКОНЧЕНА')
         except (InvalidAmountArgs, InvalidArgs, NegativeSteps) as e:
+            print(e)
+        except (PlayerNotFound, GooseNotFound, NotEnoughChips, NotEnoughMoney) as e:
             print(e)
         except KeyboardInterrupt:
             print('\nПока пока')

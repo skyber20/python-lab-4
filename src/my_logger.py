@@ -4,6 +4,7 @@ import sys
 
 
 def setup_logger():
+    """Установка своего логгера"""
     logger = logging.getLogger('casino_logger')
     logger.setLevel(logging.INFO)
 

@@ -4,6 +4,12 @@ from src.exceptions import NotEnoughMoney, NotEnoughChips
 
 class Player:
     def __init__(self, name: str, balance: int = 100, amount_chips: Chip = Chip(0)):
+        """
+        Класс Игрок
+        :param name: имя
+        :param balance: баланс
+        :param amount_chips: фишки
+        """
         self.name = name
         self.balance = balance
         self.amount_chips = amount_chips
@@ -21,20 +27,36 @@ class Player:
 
     @property
     def is_bankrupt(self):
+        """банкрот, если нет ни фишек, ни денег"""
         return self.amount_chips == 0 and self.balance <= 0
 
     def update_balance(self, amount: int):
+        """
+        Обновить баланс
+        :param amount: + или - к балансу
+        :return: ничего
+        """
         if not isinstance(amount, int):
             raise TypeError('К балансу можно прибавлять целые числа')
         self.balance += amount
 
     def buy_chips(self, amount: int):
+        """
+        Покупка фишек за деньги
+        :param amount: количество фишек, которое хотим приобрести
+        :return: ничего
+        """
         if self.balance < amount:
             raise NotEnoughMoney(self.balance, amount)
         self.amount_chips = self.amount_chips + Chip(amount)
         self.balance -= amount
 
     def sell_chips(self, amount: int):
+        """
+        Обменять фишки на деньги
+        :param amount: сколько хотим обменяться фишек на деньги
+        :return: ничего
+        """
         if self.amount_chips < amount:
             raise NotEnoughChips(amount, self.amount_chips.amount)
         self.amount_chips = self.amount_chips - Chip(amount)

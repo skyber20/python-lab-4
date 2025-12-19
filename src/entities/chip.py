@@ -1,5 +1,9 @@
 class Chip:
     def __init__(self, amount: int):
+        """
+        Класс фишка
+        :param amount: номинал
+        """
         if amount < 0:
             raise ValueError('Номинал фишек может быть только > 0')
         self.amount = amount
